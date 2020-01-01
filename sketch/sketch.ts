@@ -46,6 +46,10 @@ class Vec {
     }
 }
 
+function randInt(l: number, r: number) {
+    return Math.floor(Math.random() * (r - l)) + l;
+}
+
 // directional constants
 const up: Vec    = new Vec( 0, -1);
 const down: Vec  = new Vec( 0,  1);
@@ -66,7 +70,7 @@ let candies: Candies;
 class Sprite {
     body: Vec[];
     update(): void {};
-    draw(): void {};
+    draw(p: p5): void {};
 
     constructor() {
         this.body = [];
@@ -95,13 +99,13 @@ class Snake extends Sprite {
         this.body.push(new Vec(x, y));
     }
 
-    draw(): void {
-        push();
+    draw(p: p5): void {
+        p.push();
         for (let i = 1; i < this.body.length; i++)
-            drawCell(this.body[i].x, this.body[i].y);
-        fill(200);
-        drawCell(this.body[0].x, this.body[0].y);
-        pop();
+            drawCell(p, this.body[i].x, this.body[i].y);
+        p.fill(200);
+        drawCell(p, this.body[0].x, this.body[0].y);
+        p.pop();
     };
 
     update(): boolean {
@@ -127,19 +131,19 @@ class Snake extends Sprite {
 }
 
 class Candies extends Sprite {
-    draw(): void {
-        push();
-        fill(255, 0, 0);
+    draw(p: p5): void {
+        p.push();
+        p.fill(255, 0, 0);
         for (let i = 0; i < this.body.length; i++)
-            drawCell(this.body[i].x, this.body[i].y);
-        pop();
+            drawCell(p, this.body[i].x, this.body[i].y);
+        p.pop();
     }
 
     add(sprites: Sprite[], q: number = 1): void {
         for (let i = 0; i < q; i++) {
             let p: Vec;
             do {
-                p = new Vec(floor(random(0, w)), floor(random(0, h)));
+                p = new Vec(randInt(0, w), randInt(0, h));
             } while (Sprite.isEmpty(sprites, p))
             this.body.push(p);
         }
@@ -151,92 +155,96 @@ class Candies extends Sprite {
 }
 
 // draw cell by grid coordinates x and y
-function drawCell(x: number, y: number) {
-    rect(width / w * x, height / h * y, width / w, height / h);
+function drawCell(p: p5, x: number, y: number) {
+    p.rect(p.width / w * x, p.height / h * y, p.width / w, p.height / h);
 }
 
-function gameOverScreen() {
-    background(0, 0, 0, 50);
-    textAlign(CENTER);
-    fill(0, 255, 0);
-    text("GAME OVER!", width/2, height/2);
+function gameOverScreen(p: p5) {
+    p.background(0, 0, 0, 50);
+    p.textAlign(CENTER);
+    p.fill(0, 255, 0);
+    p.text("GAME OVER!", width/2, height/2);
 }
 
-// basic p5 setup
-function setup() { // WARNING: global variables
-    createCanvas(400, 400);
+const sketch = (p: p5) => {
+    // basic p5 setup
+    p.setup = () => {
+        p.createCanvas(400, 400);
 
-    // state machine setup
-    state = oneplayer;
+        // state machine setup
+        state = oneplayer;
 
-    switch (state) {
-        case oneplayer:
-            // ingame variable setup
-            snake = new Snake(floor(w / 2), floor(h / 2), down);
-            candies = new Candies();
-            candies.add([snake], ca);
-            break;
-    }
-
-    // slowing down framerate
-    frameRate(fr);
-}
-
-// typical p5 draw loop (game loop)
-function draw() { // WARNING: global variables
-    // check which state the game is in
-    switch (state) {
-        case oneplayer:
-            if (candies.contains(snake.nextHead)) {
-                candies.remove(snake.nextHead);
-                snake.grow();
-                candies.add([snake]);
-            }
-
-            if (!snake.update()) {
-                gameOverScreen();
-                state = gameover;
+        switch (state) {
+            case oneplayer:
+                // ingame variable setup
+                snake = new Snake(Math.floor(w / 2), Math.floor(h / 2), down);
+                candies = new Candies();
+                candies.add([snake], ca);
                 break;
-            }
+        }
 
-            // clear screen to black
-            background(0);
+        // slowing down framerate
+        p.frameRate(fr);
+    }
 
-            // draw candy
-            candies.draw()
+    // typical p5 draw loop (game loop)
+    p.draw = () => { // WARNING: global variables
+        // check which state the game is in
+        switch (state) {
+            case oneplayer:
+                if (candies.contains(snake.nextHead)) {
+                    candies.remove(snake.nextHead);
+                    snake.grow();
+                    candies.add([snake]);
+                }
 
-            // draw snake
-            fill(200);
-            snake.draw();
-            break;
+                if (!snake.update()) {
+                    gameOverScreen(p);
+                    state = gameover;
+                    break;
+                }
 
-        case twoplayer:
+                // clear screen to black
+                p.background(0);
 
-            break;
+                // draw candy
+                candies.draw(p)
 
-        case gameover:
-            // clear screen to black (with fading affect)
-            gameOverScreen();
-            break;
+                // draw snake
+                p.fill(200);
+                snake.draw(p);
+                break;
+
+            case twoplayer:
+
+                break;
+
+            case gameover:
+                // clear screen to black (with fading affect)
+                gameOverScreen(p);
+                break;
+        }
+    }
+
+    // p5 keystroke handeling
+    p.keyPressed = () => { // WARNING: global variable
+        // check which key is pressed and change direction accordingly
+        // also checks if you are turning around whitch is ignored
+        switch (p.keyCode) {
+            case p.UP_ARROW:
+                if (snake.direction != down) snake.direction = up;
+                break;
+            case p.DOWN_ARROW:
+                if (snake.direction != up) snake.direction = down;
+                break;
+            case p.LEFT_ARROW:
+                if (snake.direction != right) snake.direction = left;
+                break;
+            case p.RIGHT_ARROW:
+                if (snake.direction!= left) snake.direction = right;
+                break;
+        }
     }
 }
 
-// p5 keystroke handeling
-function keyPressed() { // WARNING: global variable
-    // check which key is pressed and change direction accordingly
-    // also checks if you are turning around whitch is ignored
-    switch (keyCode) {
-        case UP_ARROW:
-            if (snake.direction != down) snake.direction = up;
-            break;
-        case DOWN_ARROW:
-            if (snake.direction != up) snake.direction = down;
-            break;
-        case LEFT_ARROW:
-            if (snake.direction != right) snake.direction = left;
-            break;
-        case RIGHT_ARROW:
-            if (snake.direction!= left) snake.direction = right;
-            break;
-    }
-}
+const myp5 = new p5(sketch);
