@@ -25,8 +25,9 @@
 // * find a better place for this todo list
 // * write the readme
 // * write a keystroke to direction function
-// * rewrite state machine with classes
+// ✔ rewrite state machine with classes
 // * change comments to documentation comments onece project is multifile
+// * design snake better
 
 // game settings
 const settings = {
@@ -71,15 +72,42 @@ class Dirs {
     static right: Vec = new Vec(1, 0);
 }
 
-// state machine
-const oneplayer = 0;
-const gameover = 1;
-const twoplayer = 2;
-let state: number;
+interface State {
+    name: string,
+    update: (data: any, name: string) => string,
+    data: any,
+    init: (data: any) => void
+};
 
-// ingame state
-let snake: Snake;
-let candies: Candies;
+class StateMachine {
+    previous: string;
+    current: string;
+    states: Map<string, State>;
+    constructor(init: string) {
+        this.current = init;
+        this.previous = init;
+        this.states = new Map<string, State>();
+    }
+
+    init() {
+        let current = this.states.get(this.current);
+        current.init(current.data);
+    }
+
+    update(): void {
+        this.previous = this.current;
+        let current = this.states.get(this.current);
+        this.current = current.update(current.data, this.previous);
+        if (this.current !== this.previous) {
+            let current = this.states.get(this.current);
+            current.init(current.data);
+        }
+    }
+
+    addState(state: State): void {
+        this.states.set(state.name, state);
+    }
+}
 
 class Sprite {
     body: Vec[];
@@ -185,20 +213,79 @@ function gameOverScreen(p: p5) {
 
 const sketch = (p: p5) => {
     // basic p5 setup
+    let stateM = new StateMachine('oneplayer');
+    stateM.addState({
+        name: 'oneplayer',
+        update: (data: any, prev: string): string => {
+            let prevDir: Vec = data.snake.direction;
+            handleInput(keyQueue, (key: number) => {
+                switch (key) {
+                    case p.UP_ARROW:
+                        if (data.snake.direction !== Dirs.down)
+                            data.snake.direction = Dirs.up;
+                        break;
+                    case p.DOWN_ARROW:
+                        if (data.snake.direction !== Dirs.up)
+                            data.snake.direction = Dirs.down;
+                        break;
+                    case p.LEFT_ARROW:
+                        if (data.snake.direction !== Dirs.right)
+                            data.snake.direction = Dirs.left;
+                        break;
+                    case p.RIGHT_ARROW:
+                        if (data.snake.direction !== Dirs.left)
+                            data.snake.direction = Dirs.right;
+                        break;
+                }
+            }, () => data.snake.direction === prevDir);
+
+            if (data.candies.contains(data.snake.nextHead)) {
+                data.candies.remove(data.snake.nextHead);
+                data.snake.grow();
+                data.candies.add([data.snake]);
+            }
+
+            if (!data.snake.update()) {
+                return 'gameover';
+            }
+
+            // clear screen to black
+            p.background(0);
+
+            // draw candy
+            data.candies.draw(p)
+
+            // draw snake
+            p.fill(200);
+            data.snake.draw(p);
+            return 'oneplayer';
+        },
+        data: {
+            snake: Snake,
+            candies: Candies
+        },
+        init: (data: any) => {
+            data.snake = new Snake(Math.floor(settings.width / 2), Math.floor(settings.height / 2), Dirs.down);
+            data.candies = new Candies();
+            data.candies.add([data.snake], settings.candies);
+        }
+    });
+    stateM.addState({
+        name: 'gameover',
+        update: () => {
+            gameOverScreen(p);
+            return 'gameover';
+        },
+        data: null,
+        init: () => {
+            gameOverScreen(p);
+        }
+    })
+
     p.setup = () => {
         p.createCanvas(400, 400);
 
-        // state machine setup
-        state = oneplayer;
-
-        switch (state) {
-            case oneplayer:
-                // ingame variable setup
-                snake = new Snake(Math.floor(settings.width / 2), Math.floor(settings.height / 2), Dirs.down);
-                candies = new Candies();
-                candies.add([snake], settings.candies);
-                break;
-        }
+        stateM.init();
 
         // slowing down framerate
         p.frameRate(settings.framesPerSec);
@@ -206,63 +293,7 @@ const sketch = (p: p5) => {
 
     // typical p5 draw loop (game loop)
     p.draw = () => {
-        // check which state the game is in
-        switch (state) {
-            case oneplayer:
-                let prevDir: Vec = snake.direction;
-                handleInput(keyQueue, (key: number) => {
-                    switch (key) {
-                        case p.UP_ARROW:
-                            if (snake.direction !== Dirs.down)
-                                snake.direction = Dirs.up;
-                            break;
-                        case p.DOWN_ARROW:
-                            if (snake.direction !== Dirs.up)
-                                snake.direction = Dirs.down;
-                            break;
-                        case p.LEFT_ARROW:
-                            if (snake.direction !== Dirs.right)
-                                snake.direction = Dirs.left;
-                            break;
-                        case p.RIGHT_ARROW:
-                            if (snake.direction !== Dirs.left)
-                                snake.direction = Dirs.right;
-                            break;
-                    }
-                }, () => snake.direction === prevDir);
-
-                if (candies.contains(snake.nextHead)) {
-                    candies.remove(snake.nextHead);
-                    snake.grow();
-                    candies.add([snake]);
-                }
-
-                if (!snake.update()) {
-                    gameOverScreen(p);
-                    state = gameover;
-                    break;
-                }
-
-                // clear screen to black
-                p.background(0);
-
-                // draw candy
-                candies.draw(p)
-
-                // draw snake
-                p.fill(200);
-                snake.draw(p);
-                break;
-
-            case twoplayer:
-
-                break;
-
-            case gameover:
-                // clear screen to black (with fading affect)
-                gameOverScreen(p);
-                break;
-        }
+        stateM.update();
     };
 
     let keyQueue: number[] = [];
