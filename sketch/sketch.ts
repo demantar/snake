@@ -13,15 +13,20 @@
 // ✔ Sandardize points
 // ✔ Think more about candy generation location
 // * Add UI
-// * implement input queue
+// ✔ implement input queue
 // * Add player concept
-// * Migrate to p5 vectors (might have changed my mind)
 // ✔ unglobalize
 // * recomment
 // * organize code prior to sketch
-// * change == to === unless it has to be ==
-// * figure out what to do to the warning about the unused paraeter
+// ✔ change == to === unless it has to be ==
+// * figure out what to do to the warning about the unused parameter
 //   (may be connected to subtyping)
+// * move to multiple files
+// * find a better place for this todo list
+// * write the readme
+// * write a keystroke to direction function
+// * rewrite state machine with classes
+// * change comments to documentation comments onece project is multifile
 
 // game settings
 const settings = {
@@ -32,7 +37,6 @@ const settings = {
 };
 
 // class for 2d vectors
-// could easilly be replaced by p5's vector
 class Vec {
     x: number;
     y: number;
@@ -41,6 +45,7 @@ class Vec {
         this.y = y;
     }
 
+    // modulus
     public static mod(p: Vec): Vec {
         return new Vec((p.x + settings.width) % settings.width, (p.y + settings.height) % settings.height);
     }
@@ -50,7 +55,7 @@ class Vec {
     }
 
     public static equals(p: Vec, d: Vec): boolean {
-        return p.x == d.x && p.y == d.y;
+        return p.x === d.x && p.y === d.y;
     }
 }
 
@@ -59,11 +64,12 @@ function randInt(l: number, r: number) {
 }
 
 // directional constants
-class Dirs { }
-const up: Vec = new Vec(0, -1);
-const down: Vec = new Vec(0, 1);
-const left: Vec = new Vec(-1, 0);
-const right: Vec = new Vec(1, 0);
+class Dirs {
+    static up: Vec = new Vec(0, -1);
+    static down: Vec = new Vec(0, 1);
+    static left: Vec = new Vec(-1, 0);
+    static right: Vec = new Vec(1, 0);
+}
 
 // state machine
 const oneplayer = 0;
@@ -84,7 +90,7 @@ class Sprite {
 
     public contains(p: Vec): boolean {
         for (let i = 0; i < this.body.length; i++)
-            if (this.body[i].x == p.x && this.body[i].y == p.y)
+            if (this.body[i].x === p.x && this.body[i].y === p.y)
                 return true;
         return false;
     }
@@ -188,7 +194,7 @@ const sketch = (p: p5) => {
         switch (state) {
             case oneplayer:
                 // ingame variable setup
-                snake = new Snake(Math.floor(settings.width / 2), Math.floor(settings.height / 2), down);
+                snake = new Snake(Math.floor(settings.width / 2), Math.floor(settings.height / 2), Dirs.down);
                 candies = new Candies();
                 candies.add([snake], settings.candies);
                 break;
@@ -207,23 +213,23 @@ const sketch = (p: p5) => {
                 handleInput(keyQueue, (key: number) => {
                     switch (key) {
                         case p.UP_ARROW:
-                            if (snake.direction != down)
-                                snake.direction = up;
+                            if (snake.direction !== Dirs.down)
+                                snake.direction = Dirs.up;
                             break;
                         case p.DOWN_ARROW:
-                            if (snake.direction != up)
-                                snake.direction = down;
+                            if (snake.direction !== Dirs.up)
+                                snake.direction = Dirs.down;
                             break;
                         case p.LEFT_ARROW:
-                            if (snake.direction != right)
-                                snake.direction = left;
+                            if (snake.direction !== Dirs.right)
+                                snake.direction = Dirs.left;
                             break;
                         case p.RIGHT_ARROW:
-                            if (snake.direction != left)
-                                snake.direction = right;
+                            if (snake.direction !== Dirs.left)
+                                snake.direction = Dirs.right;
                             break;
                     }
-                }, () => snake.direction == prevDir);
+                }, () => snake.direction === prevDir);
 
                 if (candies.contains(snake.nextHead)) {
                     candies.remove(snake.nextHead);

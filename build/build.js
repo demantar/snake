@@ -29,7 +29,7 @@ var Vec = (function () {
         return new Vec(p.x + d.x, p.y + d.y);
     };
     Vec.equals = function (p, d) {
-        return p.x == d.x && p.y == d.y;
+        return p.x === d.x && p.y === d.y;
     };
     return Vec;
 }());
@@ -39,12 +39,12 @@ function randInt(l, r) {
 var Dirs = (function () {
     function Dirs() {
     }
+    Dirs.up = new Vec(0, -1);
+    Dirs.down = new Vec(0, 1);
+    Dirs.left = new Vec(-1, 0);
+    Dirs.right = new Vec(1, 0);
     return Dirs;
 }());
-var up = new Vec(0, -1);
-var down = new Vec(0, 1);
-var left = new Vec(-1, 0);
-var right = new Vec(1, 0);
 var oneplayer = 0;
 var gameover = 1;
 var twoplayer = 2;
@@ -61,7 +61,7 @@ var Sprite = (function () {
     ;
     Sprite.prototype.contains = function (p) {
         for (var i = 0; i < this.body.length; i++)
-            if (this.body[i].x == p.x && this.body[i].y == p.y)
+            if (this.body[i].x === p.x && this.body[i].y === p.y)
                 return true;
         return false;
     };
@@ -164,7 +164,7 @@ var sketch = function (p) {
         state = oneplayer;
         switch (state) {
             case oneplayer:
-                snake = new Snake(Math.floor(settings.width / 2), Math.floor(settings.height / 2), down);
+                snake = new Snake(Math.floor(settings.width / 2), Math.floor(settings.height / 2), Dirs.down);
                 candies = new Candies();
                 candies.add([snake], settings.candies);
                 break;
@@ -178,23 +178,23 @@ var sketch = function (p) {
                 handleInput(keyQueue, function (key) {
                     switch (key) {
                         case p.UP_ARROW:
-                            if (snake.direction != down)
-                                snake.direction = up;
+                            if (snake.direction !== Dirs.down)
+                                snake.direction = Dirs.up;
                             break;
                         case p.DOWN_ARROW:
-                            if (snake.direction != up)
-                                snake.direction = down;
+                            if (snake.direction !== Dirs.up)
+                                snake.direction = Dirs.down;
                             break;
                         case p.LEFT_ARROW:
-                            if (snake.direction != right)
-                                snake.direction = left;
+                            if (snake.direction !== Dirs.right)
+                                snake.direction = Dirs.left;
                             break;
                         case p.RIGHT_ARROW:
-                            if (snake.direction != left)
-                                snake.direction = right;
+                            if (snake.direction !== Dirs.left)
+                                snake.direction = Dirs.right;
                             break;
                     }
-                }, function () { return snake.direction == prevDir_1; });
+                }, function () { return snake.direction === prevDir_1; });
                 if (candies.contains(snake.nextHead)) {
                     candies.remove(snake.nextHead);
                     snake.grow();
