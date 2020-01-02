@@ -1,8 +1,10 @@
 //
-// ┏━┳━┳┳━┳┳┳━┳┳┳┓
-// ┃━┫┃┃┃╻┃┗┫━┫┃┃┃
-// ┣━┃┃┃┃╻┃┃┃━╋╋╋┫
-// ┗━┻┻━┻┻┻┻┻━┻┻┻┛
+//   ____              _
+//  / ___| _ __   __ _| | _____
+//  \___ \| '_ \ / _` | |/ / _ \
+//   ___) | | | | (_| |   <  __/
+//  |____/|_| |_|\__,_|_|\_\___|
+//
 //
 // By Benedikt Vilji Magnússon
 //
@@ -13,9 +15,13 @@
 // * Add UI
 // * implement input queue
 // * Add player concept
-// * Migrate to p5 vectors
-// * unglobalize
-
+// * Migrate to p5 vectors (might have changed my mind)
+// ✔ unglobalize
+// * recomment
+// * organize code prior to sketch
+// * change == to === unless it has to be ==
+// * figure out what to do to the warning about the unused paraeter
+//   (may be connected to subtyping)
 
 // game settings
 const w = 25;
@@ -33,15 +39,15 @@ class Vec {
         this.y = y;
     }
 
-    static mod(p: Vec): Vec {
+    public static mod(p: Vec): Vec {
         return new Vec((p.x + w) % w, (p.y + h) % h);
     }
 
-    static add(p: Vec, d: Vec): Vec {
+    public static add(p: Vec, d: Vec): Vec {
         return new Vec(p.x + d.x, p.y + d.y);
     }
 
-    static equals(p: Vec, d: Vec): boolean {
+    public static equals(p: Vec, d: Vec): boolean {
         return p.x == d.x && p.y == d.y;
     }
 }
@@ -51,10 +57,11 @@ function randInt(l: number, r: number) {
 }
 
 // directional constants
-const up: Vec    = new Vec( 0, -1);
-const down: Vec  = new Vec( 0,  1);
-const left: Vec  = new Vec(-1,  0);
-const right: Vec = new Vec( 1,  0);
+class Dirs { }
+const up: Vec = new Vec(0, -1);
+const down: Vec = new Vec(0, 1);
+const left: Vec = new Vec(-1, 0);
+const right: Vec = new Vec(1, 0);
 
 // state machine
 const oneplayer = 0;
@@ -66,24 +73,21 @@ let state: number;
 let snake: Snake;
 let candies: Candies;
 
-
 class Sprite {
     body: Vec[];
-    update(): void {};
-    draw(p: p5): void {};
+    public update(): void { };
+    public draw(p: p5): void { };
 
-    constructor() {
-        this.body = [];
-    }
+    constructor() { this.body = []; }
 
-    contains(p: Vec): boolean {
+    public contains(p: Vec): boolean {
         for (let i = 0; i < this.body.length; i++)
             if (this.body[i].x == p.x && this.body[i].y == p.y)
                 return true;
         return false;
     }
 
-    static isEmpty(sprites: Sprite[], p: Vec) {
+    public static isEmpty(sprites: Sprite[], p: Vec) {
         for (let i = 0; i < sprites.length; i++)
             if (sprites[i].contains(p))
                 return true;
@@ -99,7 +103,7 @@ class Snake extends Sprite {
         this.body.push(new Vec(x, y));
     }
 
-    draw(p: p5): void {
+    public draw(p: p5): void {
         p.push();
         for (let i = 1; i < this.body.length; i++)
             drawCell(p, this.body[i].x, this.body[i].y);
@@ -108,7 +112,7 @@ class Snake extends Sprite {
         p.pop();
     };
 
-    update(): boolean {
+    public update(): boolean {
         let nextHead = Vec.mod(Vec.add(this.body[0], this.direction));
         this.body.pop();
         if (this.contains(nextHead))
@@ -117,21 +121,17 @@ class Snake extends Sprite {
         return true;
     }
 
-    grow(): void {
-        this.body.push(new Vec(-1, -1));
-    }
+    public grow(): void { this.body.push(new Vec(-1, -1)); }
 
-    get head(): Vec {
-        return this.body[0];
-    }
+    public get head(): Vec { return this.body[0]; }
 
-    get nextHead(): Vec {
+    public get nextHead(): Vec {
         return Vec.mod(Vec.add(this.body[0], this.direction));
     }
 }
 
 class Candies extends Sprite {
-    draw(p: p5): void {
+    public draw(p: p5): void {
         p.push();
         p.fill(255, 0, 0);
         for (let i = 0; i < this.body.length; i++)
@@ -139,19 +139,27 @@ class Candies extends Sprite {
         p.pop();
     }
 
-    add(sprites: Sprite[], q: number = 1): void {
+    public add(sprites: Sprite[], q: number = 1): void {
         for (let i = 0; i < q; i++) {
             let p: Vec;
             do {
                 p = new Vec(randInt(0, w), randInt(0, h));
-            } while (Sprite.isEmpty(sprites, p))
-            this.body.push(p);
+            } while (Sprite.isEmpty(sprites, p)) this.body.push(p);
         }
     }
 
     remove(pos: Vec): void {
         this.body = this.body.filter(p => !(Vec.equals(p, pos)));
     }
+}
+
+function handleInput(queue: number[], f: (arg0: number) => void,
+    repf: () => boolean = () => false) {
+    let k = queue.shift()
+    f(k);
+    if (queue.length > 0 && repf())
+        handleInput(queue, f, repf);
+    return queue;
 }
 
 // draw cell by grid coordinates x and y
@@ -161,9 +169,9 @@ function drawCell(p: p5, x: number, y: number) {
 
 function gameOverScreen(p: p5) {
     p.background(0, 0, 0, 50);
-    p.textAlign(CENTER);
+    p.textAlign(p.CENTER);
     p.fill(0, 255, 0);
-    p.text("GAME OVER!", width/2, height/2);
+    p.text("GAME OVER!", p.width / 2, p.height / 2);
 }
 
 const sketch = (p: p5) => {
@@ -185,13 +193,35 @@ const sketch = (p: p5) => {
 
         // slowing down framerate
         p.frameRate(fr);
-    }
+    };
 
     // typical p5 draw loop (game loop)
-    p.draw = () => { // WARNING: global variables
+    p.draw = () => {
         // check which state the game is in
         switch (state) {
             case oneplayer:
+                let prevDir: Vec = snake.direction;
+                handleInput(keyQueue, (key: number) => {
+                    switch (key) {
+                        case p.UP_ARROW:
+                            if (snake.direction != down)
+                                snake.direction = up;
+                            break;
+                        case p.DOWN_ARROW:
+                            if (snake.direction != up)
+                                snake.direction = down;
+                            break;
+                        case p.LEFT_ARROW:
+                            if (snake.direction != right)
+                                snake.direction = left;
+                            break;
+                        case p.RIGHT_ARROW:
+                            if (snake.direction != left)
+                                snake.direction = right;
+                            break;
+                    }
+                }, () => snake.direction == prevDir);
+
                 if (candies.contains(snake.nextHead)) {
                     candies.remove(snake.nextHead);
                     snake.grow();
@@ -224,27 +254,14 @@ const sketch = (p: p5) => {
                 gameOverScreen(p);
                 break;
         }
-    }
+    };
+
+    let keyQueue: number[] = [];
 
     // p5 keystroke handeling
     p.keyPressed = () => { // WARNING: global variable
-        // check which key is pressed and change direction accordingly
-        // also checks if you are turning around whitch is ignored
-        switch (p.keyCode) {
-            case p.UP_ARROW:
-                if (snake.direction != down) snake.direction = up;
-                break;
-            case p.DOWN_ARROW:
-                if (snake.direction != up) snake.direction = down;
-                break;
-            case p.LEFT_ARROW:
-                if (snake.direction != right) snake.direction = left;
-                break;
-            case p.RIGHT_ARROW:
-                if (snake.direction!= left) snake.direction = right;
-                break;
-        }
+        keyQueue.push(p.keyCode);
     }
-}
+};
 
 const myp5 = new p5(sketch);

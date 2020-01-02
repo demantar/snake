@@ -34,6 +34,11 @@ var Vec = (function () {
 function randInt(l, r) {
     return Math.floor(Math.random() * (r - l)) + l;
 }
+var Dirs = (function () {
+    function Dirs() {
+    }
+    return Dirs;
+}());
 var up = new Vec(0, -1);
 var down = new Vec(0, 1);
 var left = new Vec(-1, 0);
@@ -91,13 +96,9 @@ var Snake = (function (_super) {
         this.body.unshift(nextHead);
         return true;
     };
-    Snake.prototype.grow = function () {
-        this.body.push(new Vec(-1, -1));
-    };
+    Snake.prototype.grow = function () { this.body.push(new Vec(-1, -1)); };
     Object.defineProperty(Snake.prototype, "head", {
-        get: function () {
-            return this.body[0];
-        },
+        get: function () { return this.body[0]; },
         enumerable: true,
         configurable: true
     });
@@ -137,14 +138,22 @@ var Candies = (function (_super) {
     };
     return Candies;
 }(Sprite));
+function handleInput(queue, f, repf) {
+    if (repf === void 0) { repf = function () { return false; }; }
+    var k = queue.shift();
+    f(k);
+    if (queue.length > 0 && repf())
+        handleInput(queue, f, repf);
+    return queue;
+}
 function drawCell(p, x, y) {
     p.rect(p.width / w * x, p.height / h * y, p.width / w, p.height / h);
 }
 function gameOverScreen(p) {
     p.background(0, 0, 0, 50);
-    p.textAlign(CENTER);
+    p.textAlign(p.CENTER);
     p.fill(0, 255, 0);
-    p.text("GAME OVER!", width / 2, height / 2);
+    p.text("GAME OVER!", p.width / 2, p.height / 2);
 }
 var sketch = function (p) {
     p.setup = function () {
@@ -162,6 +171,27 @@ var sketch = function (p) {
     p.draw = function () {
         switch (state) {
             case oneplayer:
+                var prevDir_1 = snake.direction;
+                handleInput(keyQueue, function (key) {
+                    switch (key) {
+                        case p.UP_ARROW:
+                            if (snake.direction != down)
+                                snake.direction = up;
+                            break;
+                        case p.DOWN_ARROW:
+                            if (snake.direction != up)
+                                snake.direction = down;
+                            break;
+                        case p.LEFT_ARROW:
+                            if (snake.direction != right)
+                                snake.direction = left;
+                            break;
+                        case p.RIGHT_ARROW:
+                            if (snake.direction != left)
+                                snake.direction = right;
+                            break;
+                    }
+                }, function () { return snake.direction == prevDir_1; });
                 if (candies.contains(snake.nextHead)) {
                     candies.remove(snake.nextHead);
                     snake.grow();
@@ -184,25 +214,9 @@ var sketch = function (p) {
                 break;
         }
     };
+    var keyQueue = [];
     p.keyPressed = function () {
-        switch (p.keyCode) {
-            case p.UP_ARROW:
-                if (snake.direction != down)
-                    snake.direction = up;
-                break;
-            case p.DOWN_ARROW:
-                if (snake.direction != up)
-                    snake.direction = down;
-                break;
-            case p.LEFT_ARROW:
-                if (snake.direction != right)
-                    snake.direction = left;
-                break;
-            case p.RIGHT_ARROW:
-                if (snake.direction != left)
-                    snake.direction = right;
-                break;
-        }
+        keyQueue.push(p.keyCode);
     };
 };
 var myp5 = new p5(sketch);
