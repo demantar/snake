@@ -11,17 +11,19 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var w = 25;
-var h = 25;
-var fr = 5;
-var ca = 1;
+var settings = {
+    width: 25,
+    height: 25,
+    framesPerSec: 5,
+    candies: 1
+};
 var Vec = (function () {
     function Vec(x, y) {
         this.x = x;
         this.y = y;
     }
     Vec.mod = function (p) {
-        return new Vec((p.x + w) % w, (p.y + h) % h);
+        return new Vec((p.x + settings.width) % settings.width, (p.y + settings.height) % settings.height);
     };
     Vec.add = function (p, d) {
         return new Vec(p.x + d.x, p.y + d.y);
@@ -128,7 +130,7 @@ var Candies = (function (_super) {
         for (var i = 0; i < q; i++) {
             var p = void 0;
             do {
-                p = new Vec(randInt(0, w), randInt(0, h));
+                p = new Vec(randInt(0, settings.width), randInt(0, settings.height));
             } while (Sprite.isEmpty(sprites, p));
             this.body.push(p);
         }
@@ -147,6 +149,7 @@ function handleInput(queue, f, repf) {
     return queue;
 }
 function drawCell(p, x, y) {
+    var w = settings.width, h = settings.height;
     p.rect(p.width / w * x, p.height / h * y, p.width / w, p.height / h);
 }
 function gameOverScreen(p) {
@@ -161,12 +164,12 @@ var sketch = function (p) {
         state = oneplayer;
         switch (state) {
             case oneplayer:
-                snake = new Snake(Math.floor(w / 2), Math.floor(h / 2), down);
+                snake = new Snake(Math.floor(settings.width / 2), Math.floor(settings.height / 2), down);
                 candies = new Candies();
-                candies.add([snake], ca);
+                candies.add([snake], settings.candies);
                 break;
         }
-        p.frameRate(fr);
+        p.frameRate(settings.framesPerSec);
     };
     p.draw = function () {
         switch (state) {

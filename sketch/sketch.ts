@@ -24,10 +24,12 @@
 //   (may be connected to subtyping)
 
 // game settings
-const w = 25;
-const h = 25;
-const fr = 5;
-const ca = 1;
+const settings = {
+    width: 25,
+    height: 25,
+    framesPerSec: 5,
+    candies: 1
+};
 
 // class for 2d vectors
 // could easilly be replaced by p5's vector
@@ -40,7 +42,7 @@ class Vec {
     }
 
     public static mod(p: Vec): Vec {
-        return new Vec((p.x + w) % w, (p.y + h) % h);
+        return new Vec((p.x + settings.width) % settings.width, (p.y + settings.height) % settings.height);
     }
 
     public static add(p: Vec, d: Vec): Vec {
@@ -143,7 +145,7 @@ class Candies extends Sprite {
         for (let i = 0; i < q; i++) {
             let p: Vec;
             do {
-                p = new Vec(randInt(0, w), randInt(0, h));
+                p = new Vec(randInt(0, settings.width), randInt(0, settings.height));
             } while (Sprite.isEmpty(sprites, p)) this.body.push(p);
         }
     }
@@ -164,6 +166,7 @@ function handleInput(queue: number[], f: (arg0: number) => void,
 
 // draw cell by grid coordinates x and y
 function drawCell(p: p5, x: number, y: number) {
+    let w = settings.width, h = settings.height;
     p.rect(p.width / w * x, p.height / h * y, p.width / w, p.height / h);
 }
 
@@ -185,14 +188,14 @@ const sketch = (p: p5) => {
         switch (state) {
             case oneplayer:
                 // ingame variable setup
-                snake = new Snake(Math.floor(w / 2), Math.floor(h / 2), down);
+                snake = new Snake(Math.floor(settings.width / 2), Math.floor(settings.height / 2), down);
                 candies = new Candies();
-                candies.add([snake], ca);
+                candies.add([snake], settings.candies);
                 break;
         }
 
         // slowing down framerate
-        p.frameRate(fr);
+        p.frameRate(settings.framesPerSec);
     };
 
     // typical p5 draw loop (game loop)
